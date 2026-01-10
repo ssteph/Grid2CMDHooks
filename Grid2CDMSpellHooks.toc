@@ -1,0 +1,7 @@
+## Interface: 120001
+## Title: Grid2 |cd1ff7d0aGrid2CDMSpellHooks|r
+## Notes: Adds CDM tracked buff indicators to Grid2
+## SavedVariablesPerCharacter:
+## Dependencies: Grid2
+
+Grid2CDMSpellHooks.lua
