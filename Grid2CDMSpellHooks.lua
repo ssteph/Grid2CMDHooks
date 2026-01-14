@@ -225,9 +225,48 @@ local HookFuncs = {
         return result
     end,
 
+    GetDuration = function(self, unit)
+        local result = nil
+
+        local frame = CdmHookA3:GetFrame(self.dbx.spellID, unit)
+        if frame then
+            local auraInstanceId = frame.auraInstanceID
+
+            if auraInstanceId and type(auraInstanceId) == "number" and auraInstanceId > 0 then
+                local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID("player", auraInstanceId)
+                result = auraData.duration
+            end
+        end
+
+        --TODO: Grid2 attempts to do arithmetic without regard for secret value
+        -- not much that can be done here without changes to Grid2
+        if issecretvalue(result) then
+            result = nil
+        end
+
+        return result
+    end,
+
     GetExpirationTime = function(self, unit)
-        --todo
-        return nil
+        local result = nil
+
+        local frame = CdmHookA3:GetFrame(self.dbx.spellID, unit)
+        if frame then
+            local auraInstanceId = frame.auraInstanceID
+
+            if auraInstanceId and type(auraInstanceId) == "number" and auraInstanceId > 0 then
+                local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID("player", auraInstanceId)
+                result = auraData.expirationTime
+            end
+        end
+
+        --TODO: Grid2 attempts to do arithmetic without regard for secret value
+        -- not much that can be done here without changes to Grid2
+        if issecretvalue(result) then
+            result = nil
+        end
+
+        return result
     end,
 
     GetColor = function(self, unit)
