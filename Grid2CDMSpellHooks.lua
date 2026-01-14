@@ -215,8 +215,14 @@ local HookFuncs = {
     end,
 
     GetIcon = function(self, unit)
-        --todo
-        return nil
+        local result = nil
+
+        local frame = CdmHookA3:GetFrame(self.dbx.spellID, unit)
+        if frame then
+            result = frame.Icon.Icon:GetTexture()
+        end
+
+        return result
     end,
 
     GetExpirationTime = function(self, unit)
