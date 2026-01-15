@@ -76,7 +76,31 @@ function CdmHookA3:ScanCDMBuffs()
                 end
             end
         end
+    end
 
+    local buffIconsFrame = _G["BuffIconCooldownViewer"]
+    if buffIconsFrame then
+        local num = select("#", buffIconsFrame:GetChildren())
+
+        self:Print("BuffIconCooldownViewer " .. num)
+
+        for i = 1, num do
+            local child = select(i, buffIconsFrame:GetChildren())
+            local cooldownID = child.cooldownID or (child.cooldownInfo and child.cooldownInfo.cooldownID)
+
+            if cooldownID and cooldownID > 0 then
+                local info = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo(cooldownID)
+                if info and info.spellID and info.spellID > 0 and not self.watchedSpells[info.spellID] then
+                    self.watchedSpells[info.spellID] = {
+                        cdmFrame = child,
+                        cooldownID = cooldownID,
+                        cooldownInfo = info,
+                        targetUnit = nil,
+                        timeElapsed = 0
+                    }
+                end
+            end
+        end
     end
 
 end
@@ -205,9 +229,9 @@ local HookFuncs = {
             local auraInstanceId = frame.auraInstanceID
 
             if auraInstanceId and type(auraInstanceId) == "number" and auraInstanceId > 0 then
-                local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID("player", auraInstanceId)
-                local dur = C_UnitAuras.GetAuraDurationRemaining("player", auraInstanceId)
-                result = string.format("%.1f", dur or 0)
+                --local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID("player", auraInstanceId)
+                local dur = C_UnitAuras.GetAuraDuration("player", auraInstanceId)
+                result = string.format("%.1f", dur and dur:GetRemainingDuration() or 0)
             end
         end
 
@@ -233,8 +257,10 @@ local HookFuncs = {
             local auraInstanceId = frame.auraInstanceID
 
             if auraInstanceId and type(auraInstanceId) == "number" and auraInstanceId > 0 then
-                local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID("player", auraInstanceId)
-                result = auraData.duration
+                --local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID("player", auraInstanceId)
+                --result = auraData.duration
+                local dur = C_UnitAuras.GetAuraDuration("player", auraInstanceId)
+                result = dur:GetTotalDuration()
             end
         end
 
@@ -255,8 +281,10 @@ local HookFuncs = {
             local auraInstanceId = frame.auraInstanceID
 
             if auraInstanceId and type(auraInstanceId) == "number" and auraInstanceId > 0 then
-                local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID("player", auraInstanceId)
-                result = auraData.expirationTime
+                --local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID("player", auraInstanceId)
+                --result = auraData.expirationTime
+                local dur = C_UnitAuras.GetAuraDuration("player", auraInstanceId)
+                result = dur:GetEndTime()
             end
         end
 
