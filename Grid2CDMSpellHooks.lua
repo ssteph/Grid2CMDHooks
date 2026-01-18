@@ -265,12 +265,6 @@ local HookFuncs = {
             end
         end
 
-        --TODO: Grid2 attempts to do arithmetic without regard for secret value
-        -- not much that can be done here without changes to Grid2
-        if issecretvalue(result) then
-            result = nil
-        end
-
         return result
     end,
 
@@ -285,12 +279,6 @@ local HookFuncs = {
                 local dur = C_UnitAuras.GetAuraDuration("player", auraInstanceId)
                 result = dur:GetEndTime()
             end
-        end
-
-        --TODO: Grid2 attempts to do arithmetic without regard for secret value
-        -- not much that can be done here without changes to Grid2
-        if issecretvalue(result) then
-            result = nil
         end
 
         return result
