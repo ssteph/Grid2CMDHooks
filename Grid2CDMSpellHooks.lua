@@ -121,24 +121,18 @@ function CdmHookA3:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
                 local watchData = self.watchedSpells[spellID]
                 if watchData then
                     local targetID = self:FindUnitId(self.lastSentCast.target)
+                    local previousTarget = watchData.targetUnit
 
-                    if targetID then
-                        local previousTarget = watchData.targetUnit
+                    --targetID could be nil, e.g. when casting on an NPC
+                    watchData.targetUnit = targetID
+                    watchData.timeElapsed = 0
 
-                        watchData.targetUnit = targetID
-                        watchData.timeElapsed = 0
+                    if watchData.cooldownID > 0 then
+                        watchData.cooldownInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo(watchData.cooldownID)
+                    end
 
-                        --self:Print("watchData.cooldownID is " .. watchData.cooldownID)
-
-                        if watchData.cooldownID > 0 then
-                            watchData.cooldownInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo(watchData.cooldownID)
-                        end
-
-                        --todo: only update relevant frames
-                        --Grid2:UpdateFramesOfUnit(targetID)
-                        if previousTarget then
-                            Grid2:UpdateFramesOfUnit(previousTarget)
-                        end
+                    if previousTarget then
+                        Grid2:UpdateFramesOfUnit(previousTarget)
                     end
                 end
             else
