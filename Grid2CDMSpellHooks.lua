@@ -80,8 +80,12 @@ function CdmHookA3:TryAddToWatchedSpells(cdmFrame)
         local info = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo(cooldownID)
 
         if info and info.spellID and info.spellID > 0 and not self.watchedSpells[info.spellID] then
+            local spellInfo = C_Spell.GetSpellInfo(info.spellID)
+            local texture = spellInfo and spellInfo.iconID or nil
+
             self.watchedSpells[info.spellID] = {
                 cdmFrame = cdmFrame,
+                texture = texture,
                 cooldownID = cooldownID,
                 cooldownInfo = info,
                 targetUnit = nil,
@@ -230,7 +234,20 @@ function CdmHookA3:GetInfo(spellID, unit)
     local watchData = self.watchedSpells[spellID]
     if watchData and watchData.targetUnit then
         if UnitIsUnit(watchData.targetUnit, unit) then
-           return watchData.cooldownInfo
+            return watchData.cooldownInfo
+        end
+    end
+
+    return nil
+end
+
+function CdmHookA3:GetTexture(spellID, unit)
+    if not spellID then return nil end
+
+    local watchData = self.watchedSpells[spellID]
+    if watchData and watchData.targetUnit then
+        if UnitIsUnit(watchData.targetUnit, unit) then
+           return watchData.texture
         end
     end
 
@@ -263,13 +280,7 @@ local HookFuncs = {
     end,
 
     GetIcon = function(self, unit)
-        local result = nil
-
-        local frame = CdmHookA3:GetFrame(self.dbx.spellID, unit)
-        if frame then
-            result = frame.Icon.Icon:GetTexture()
-        end
-
+        local result = CdmHookA3:GetTexture(self.dbx.spellID, unit)
         return result
     end,
 
