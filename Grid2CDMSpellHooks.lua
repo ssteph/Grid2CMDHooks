@@ -8,6 +8,8 @@ CdmHookA3 = LibStub("AceAddon-3.0"):NewAddon("CdmHookA3", "AceEvent-3.0", "AceCo
 CdmHookA3.lastSentCast = nil
 CdmHookA3.watchedSpells = { }
 CdmHookA3.searchCMD = true
+CdmHookA3.settingsHooked = false
+CdmHookA3.unitsToUpdate = {}
 
 local updateFrame = CreateFrame("FRAME")
 updateFrame:HookScript("OnUpdate", function(self, elapsed)
@@ -15,7 +17,6 @@ updateFrame:HookScript("OnUpdate", function(self, elapsed)
 end)
 
 function CdmHookA3:OnEnable()
-    --self:Print("Enable CdmHookA3")
     self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     self:RegisterEvent("UNIT_SPELLCAST_SENT")
 end
@@ -29,31 +30,77 @@ function CdmHookA3:OnUpdate(elapsed)
     if self.searchCMD and not InCombatLockdown() then
         self:ScanCDMBuffs()
         self.searchCMD = false
+
+        if not self.settingsHooked then
+            local cdmSettings = _G["CooldownViewerSettings"]
+            if cdmSettings then
+                cdmSettings:HookScript("OnHide", function()
+                    CdmHookA3:TriggerRescan()
+                end)
+            end
+
+            self.settingsHooked = true
+        end
     end
 
     for spellID, watchData in pairs(self.watchedSpells) do
         if watchData.targetUnit then
             watchData.timeElapsed = watchData.timeElapsed + elapsed
+            self.unitsToUpdate[watchData.targetUnit] = true
 
             if watchData.cdmFrame and not watchData.cdmFrame.auraInstanceID and watchData.timeElapsed > 1.0 then
-                local previousTarget = watchData.targetUnit
                 watchData.targetUnit = nil
-                --only update relevant frame
-                Grid2:UpdateFramesOfUnit(previousTarget)
-            else
-                --only update relevant frame
-                Grid2:UpdateFramesOfUnit(watchData.targetUnit)
             end
+        end
+    end
+
+    for unit, _ in pairs(self.unitsToUpdate) do
+        --only update relevant frame
+        Grid2:UpdateFramesOfUnit(unit)
+    end
+
+    self.unitsToUpdate = { }
+end
+
+function CdmHookA3:TriggerRescan()
+    for spellID, watchData in pairs(self.watchedSpells) do
+        if watchData.targetUnit then
+            self.unitsToUpdate[watchData.targetUnit] = true
+        end
+    end
+
+    self.watchedSpells = {}
+    self.searchCMD = true
+end
+
+function CdmHookA3:TryAddToWatchedSpells(cdmFrame)
+    local cooldownID = cdmFrame.cooldownID or (cdmFrame.cooldownInfo and cdmFrame.cooldownInfo.cooldownID)
+
+    if cooldownID and cooldownID > 0 then
+        local info = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo(cooldownID)
+
+        if info and info.spellID and info.spellID > 0 and not self.watchedSpells[info.spellID] then
+            self.watchedSpells[info.spellID] = {
+                cdmFrame = cdmFrame,
+                cooldownID = cooldownID,
+                cooldownInfo = info,
+                targetUnit = nil,
+                timeElapsed = 0
+            }
         end
     end
 end
 
-function CdmHookA3:TriggerRescan()
-    --todo: maybe not necessary?!
-end
-
 function CdmHookA3:ScanCDMBuffs()
-    --todo: also scan icons
+
+    local ArcRef = _G["ArcUI_NS"]
+    if ArcRef then
+        local arcIcons = ArcRef.API:GetCDMAuraIcons()
+
+        for _, arcIcon in pairs(arcIcons) do
+            if arcIcon and arcIcon.frame then self:TryAddToWatchedSpells(arcIcon.frame) end
+        end
+    end
 
     local buffBarsFrame = _G["BuffBarCooldownViewer"]
     if buffBarsFrame then
@@ -61,20 +108,7 @@ function CdmHookA3:ScanCDMBuffs()
 
         for i = 1, num do
             local child = select(i, buffBarsFrame:GetChildren())
-            local cooldownID = child.cooldownID or (child.cooldownInfo and child.cooldownInfo.cooldownID)
-
-            if cooldownID and cooldownID > 0 then
-                local info = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo(cooldownID)
-                if info and info.spellID and info.spellID > 0 then
-                    self.watchedSpells[info.spellID] = {
-                        cdmFrame = child,
-                        cooldownID = cooldownID,
-                        cooldownInfo = info,
-                        targetUnit = nil,
-                        timeElapsed = 0
-                    }
-                end
-            end
+            if child then self:TryAddToWatchedSpells(child) end
         end
     end
 
@@ -84,24 +118,7 @@ function CdmHookA3:ScanCDMBuffs()
 
         for i = 1, num do
             local child = select(i, buffIconsFrame:GetChildren())
-            local cooldownID = child.cooldownID or (child.cooldownInfo and child.cooldownInfo.cooldownID)
-
-            --self:Print("cdid " .. tostring(cooldownID))
-
-            if cooldownID and cooldownID > 0 then
-                local info = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo(cooldownID)
-
-                if info and info.spellID and info.spellID > 0 and not self.watchedSpells[info.spellID] then
-                    --self:Print("+++ created " .. info.spellID)
-                    self.watchedSpells[info.spellID] = {
-                        cdmFrame = child,
-                        cooldownID = cooldownID,
-                        cooldownInfo = info,
-                        targetUnit = nil,
-                        timeElapsed = 0
-                    }
-                end
-            end
+            if child then self:TryAddToWatchedSpells(child) end
         end
     end
 
@@ -119,6 +136,7 @@ function CdmHookA3:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
         if not issecretvalue(self.lastSentCast.guid) and not issecretvalue(castGUID) then
             if self.lastSentCast.guid == castGUID then
                 local watchData = self.watchedSpells[spellID]
+
                 if watchData then
                     local targetID = self:FindUnitId(self.lastSentCast.target)
                     local previousTarget = watchData.targetUnit
@@ -234,7 +252,6 @@ local HookFuncs = {
         local frame = CdmHookA3:GetFrame(self.dbx.spellID, unit)
         if frame then
             local auraInstanceId = frame.auraInstanceID
-
             if auraInstanceId and type(auraInstanceId) == "number" and auraInstanceId > 0 then
                 --local auraData = C_UnitAuras.GetAuraDataByAuraInstanceID("player", auraInstanceId)
                 local dur = C_UnitAuras.GetAuraDuration("player", auraInstanceId)
@@ -294,8 +311,8 @@ local HookFuncs = {
     end,
 
     UpdateDB = function(self)
-        --todo might be unnecessary
-        CdmHookA3:TriggerRescan()
+        --TODO: might be unnecessary
+        --CdmHookA3:TriggerRescan()
     end,
 }
 
