@@ -155,11 +155,10 @@ function CdmHookA3:FindUnitId(unitNameToTest)
     end
 
     local prefix = "party"
-    local num = 5
+    local num = GetNumGroupMembers()
 
     if IsInRaid() then
         prefix = "raid"
-        num = GetNumRaidMembers()
     end
 
     for i = 1, num do
