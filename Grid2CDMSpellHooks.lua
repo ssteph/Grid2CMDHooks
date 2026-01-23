@@ -325,12 +325,28 @@ local HookFuncs = {
         --TODO: might be unnecessary
         --CdmHookA3:TriggerRescan()
     end,
+
+    GetPercent = function(self, unit)
+        local result = 0.0
+
+        local frame = CdmHookA3:GetFrame(self.dbx.spellID, unit)
+        if frame then
+            local auraInstanceId = frame.auraInstanceID
+
+            if auraInstanceId and type(auraInstanceId) == "number" and auraInstanceId > 0 then
+                local dur = C_UnitAuras.GetAuraDuration("player", auraInstanceId)
+                result = dur:GetRemainingPercent()
+            end
+        end
+
+        return result
+    end,
 }
 
 Grid2.setupFunc["cdm-hook"] = function(baseKey, dbx)
     local newHook = Grid2.statusPrototype:new(baseKey, true)
     newHook:Inject(HookFuncs)
-    Grid2:RegisterStatus(newHook, {"color", "icon", "text"}, baseKey, dbx)
+    Grid2:RegisterStatus(newHook, {"color", "icon", "text", "percent"}, baseKey, dbx)
     newHook.dbx = dbx
 	return newHook
 end
