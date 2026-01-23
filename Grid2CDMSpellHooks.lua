@@ -427,23 +427,50 @@ Grid2:PostHookFunc( Grid2, 'LoadOptions', function()
     } )
 
     Grid2Options:RegisterStatusOptions( "cdm-hook", "cdm-hooks", function(self, status, options, optionParams)
-           	options.spellID_opt = {
+           	options.header1 = {
+          		type = "header",
+          		order = 1,
+          		name = "Spell",
+           	}
+
+            local buildSpellText = function(id)
+                local spellInfo = C_Spell.GetSpellInfo(id)
+                local result = "Spell: |c00ffff00" .. (spellInfo and spellInfo.name or "UNKNOWN") .. "|r"
+                if spellInfo then result = result .. " |T" .. spellInfo.iconID .. ":0|t" end
+                options.spellID_desc.name = result
+            end
+
+       	    options.spellID_opt = {
           		type = "input", --dialogControl = "Aura_EditBox",
           		order = 5.1,
-          		width = "full",
-          		name = "SpellId",
-          		--usage = NewAuraUsageDescription,
+                width = "full",
+                name = "SpellID of the aura as it appears in CDM",
           		get = function () return status.dbx.spellID and tostring(status.dbx.spellID) or "" end,
           		set = function (_, v)
     				status.dbx.spellID = tonumber(v) or 0
-    				status:Refresh()
+                    status:Refresh()
+                    buildSpellText(status.dbx.spellID)
                 end,
+           	}
+
+           	options.spellID_desc = {
+          		type = "description",
+          		order = 5.2,
+                name = "",
+            }
+
+            buildSpellText(status.dbx.spellID)
+
+           	options.header2 = {
+          		type = "header",
+          		order = 6,
+          		name = "Misc",
            	}
 
             options.color1 = {
                 type = "color",
                 width = "full",
-                order = 5.2,
+                order = 7,
                 name = L["Color"],
                 get = function()
                     local c = status.dbx.color1
