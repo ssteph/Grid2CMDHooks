@@ -1,4 +1,4 @@
-## Interface: 120005
+## Interface: 120007
 ## Title: Grid2 |cd1ff7d0aCDMSpellHooks|r
 ## Notes: Adds CDM tracked buff indicators to Grid2
 ## SavedVariablesPerCharacter:
